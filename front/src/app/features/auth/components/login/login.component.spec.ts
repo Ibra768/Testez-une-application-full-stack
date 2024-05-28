@@ -63,14 +63,15 @@ describe('LoginComponent', () => {
   // En cas d'erreur, la variable onError doit être à true
   it('Should set onError to true when login fails', () => {
 
-    // Arrange
+    // On injecte le service AuthService
     const authService = TestBed.inject(AuthService);
+    // On mock la méthode login pour qu'elle retourne une erreur
     jest.spyOn(authService, 'login').mockReturnValue(throwError('error'));
 
-    // Act
+    // On lance la méthode submit
     component.submit();
 
-    // Assert
+    // On s'attend à ce que la variable onError soit à true
     expect(component.onError).toBe(true);
   });
 

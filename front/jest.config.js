@@ -7,12 +7,6 @@ module.exports = {
   bail: false,
   verbose: false,
   collectCoverage: true,
-  collectCoverageFrom: [
-    "src/**/*.ts", // Include .ts files
-    "!src/**/*.spec.ts", // Exclude .spec.ts files
-    "!src/**/*.html", // Exclude .html files
-  ],
-  coverageReporters: ['lcov', 'text'],
   coverageDirectory: './coverage/jest',
   testPathIgnorePatterns: ['<rootDir>/node_modules/'],
   coveragePathIgnorePatterns: ['<rootDir>/node_modules/'],

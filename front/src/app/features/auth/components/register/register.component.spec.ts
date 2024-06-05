@@ -41,6 +41,7 @@ describe('RegisterComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  // Unit test
   it('Should form value be of type RegisterRequest', () => {
 
     // On définit les valeurs fictives du formulaire

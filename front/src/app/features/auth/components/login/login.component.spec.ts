@@ -42,6 +42,7 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  // Unit test
   it('Should form value be of type LoginRequest', () => {
     // Arrange
     const expectedEmail = 'test@test.com';

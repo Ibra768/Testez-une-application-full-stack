@@ -295,7 +295,7 @@ describe('User e2e test', () => {
   })
 
   // Test pour la déconnexion d'un utilisateur
-  it('Logout successful', () => {
+  it('Logout', () => {
     // Clique sur le lien pour se déconnecter
     cy.get('span[class=link]').contains("Logout").click()
 

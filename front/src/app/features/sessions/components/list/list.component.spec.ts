@@ -13,6 +13,7 @@ describe('ListComponent', () => {
 
   const mockSessionService = {
     sessionInformation: {
+      id : 1,
       admin: true
     }
   }
@@ -36,16 +37,8 @@ describe('ListComponent', () => {
 
   // On teste que la méthode get user retourne bien les informations de session
   it('Should return session information', () => {
-    // On simule les informations de session
-    const sessionInformation = { admin: true, id: 1 };
-
-    // On redéfinit la propriété sessionInformation sur l'objet mockSessionService
-    Object.defineProperty(mockSessionService, 'sessionInformation', {
-      get: jest.fn(() => sessionInformation),
-    });
-
     // On vérifie que la méthode get user retourne bien les informations de session simulées
-    expect(component.user).toEqual(sessionInformation);
+    expect(component.user).toEqual(mockSessionService.sessionInformation);
   });
 
 });

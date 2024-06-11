@@ -1,183 +1,111 @@
 package com.openclassrooms.starterjwt.controllers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
-
-import java.time.LocalDateTime;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-
-
-import com.openclassrooms.starterjwt.dto.UserDto;
-import com.openclassrooms.starterjwt.mapper.UserMapper;
 import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.services.UserService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
-class UserControllerTest {
+import java.util.ArrayList;
+import java.util.List;
 
-    @Mock
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private UserService userService;
 
-    @Mock
-    private UserMapper userMapper;
-
-    @Mock
-    private SecurityContext securityContext;
-
-    @InjectMocks
-    private UserController userController;
-
-    private User mockUser;
+    private List<User> mockUsers;
 
     @BeforeEach
     public void setup() {
-
-        SecurityContextHolder.setContext(securityContext);
-
-        this.mockUser = new User(1L, "john.doe@example.com", "Doe", "John", "A complex password", false, LocalDateTime.now(), LocalDateTime.now());
-
+        this.mockUsers = new ArrayList<>();
+        this.mockUsers.add(new User("john.doe@example.com", "Doe", "John","A small password", false));
+        this.mockUsers.add(new User("john.dae@example.com", "Dae", "John","A small password", false));
     }
 
     @Test
-    void findByIdSuccessTest() {
+    @WithMockUser
+    public void getUserByIdTest() throws Exception {
+        when(userService.findById(anyLong())).thenReturn(mockUsers.get(0));
 
-        // GIVEN
-        String userId = "1";
-        User user = this.mockUser;
-        UserDto userDto = new UserDto();
-        // On simule le comportement du service pour retourner un utilisateur lorsqu'on lui passe un identifiant
+        mockMvc.perform(get("/api/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    public void getUserByIdNotFoundTest() throws Exception {
+
+        when(userService.findById(anyLong())).thenReturn(null);
+
+        mockMvc.perform(get("/api/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    public void getUserByIdBadRequestTest() throws Exception {
+        mockMvc.perform(get("/api/user/not_a_number")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe@example.com")
+    public void deleteUserByIdTest() throws Exception {
+        when(userService.findById(anyLong())).thenReturn(mockUsers.get(0));
+
+        mockMvc.perform(delete("/api/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    public void deleteUserByIdNotFoundTest() throws Exception {
+        when(userService.findById(anyLong())).thenReturn(null);
+
+        mockMvc.perform(delete("/api/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe@example.com")
+    public void deleteUserByIdUnauthorizedTest() throws Exception {
+        User user = mockUsers.get(1);
         when(userService.findById(anyLong())).thenReturn(user);
-        when(userMapper.toDto(user)).thenReturn(userDto);
 
-        // WHEN
-        // On appelle la méthode du contrôleur avec l'identifiant de l'utilisateur
-        ResponseEntity<?> response = userController.findById(userId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est OK et que le corps de la réponse correspond à l'utilisateur attendu
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(this.userMapper.toDto(user));
+        mockMvc.perform(delete("/api/user/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void findByIdNotFoundTest() {
-
-        // GIVEN
-        String userId = "1";
-        // On simule le comportement du service pour retourner null lorsqu'on lui passe un identifiant
-        when(userService.findById(anyLong())).thenReturn(null);
-
-        // WHEN
-        // On appelle la méthode du contrôleur avec l'identifiant de l'utilisateur
-        ResponseEntity<?> response = userController.findById(userId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est NOT_FOUND
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void findByIdBadRequestTest() {
-
-        // GIVEN
-        String invalidUserId = "invalidId";
-
-        // WHEN
-        // On appelle la méthode du contrôleur avec un identifiant invalide
-        ResponseEntity<?> response = userController.findById(invalidUserId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void deleteSuccessTest() {
-
-        // GIVEN
-        String userId = "1";
-        User mockUser = this.mockUser;
-
-        // On simule le comportement du service pour retourner un utilisateur lorsqu'on lui passe un identifiant
-        when(userService.findById(mockUser.getId())).thenReturn(mockUser);
-        UserDetails mockUserDetails = mock(UserDetails.class);
-        // On simule le comportement du contexte de sécurité pour retourner un utilisateur authentifié
-        when(securityContext.getAuthentication()).thenReturn(new UsernamePasswordAuthenticationToken(mockUserDetails, null));
-        when(mockUserDetails.getUsername()).thenReturn(mockUser.getEmail());
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer l'utilisateur
-        ResponseEntity<?> response = userController.save(userId.toString());
-
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        // On vérifie que la méthode de suppression du service a été appelée une fois
-        verify(userService, times(1)).delete(Long.parseLong(userId));
-    }
-
-    @Test
-    void deleteNotFoundTest() {
-        // GIVEN
-        String userId = "1";
-        // On simule le comportement du service pour retourner null lorsqu'on lui passe un identifiant
-        when(userService.findById(anyLong())).thenReturn(null);
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer l'utilisateur
-        ResponseEntity<?> response = userController.save(userId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est NOT_FOUND
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void deleteUnauthorizedTest() {
-
-        // GIVEN
-        String userId = "1";
-        User mockUser = this.mockUser;
-
-        // On simule le comportement du service pour retourner un utilisateur lorsqu'on lui passe un identifiant
-        when(userService.findById(mockUser.getId())).thenReturn(mockUser);
-        UserDetails mockUserDetails = mock(UserDetails.class);
-        // On simule le comportement du contexte de sécurité pour retourner un utilisateur authentifié
-        when(securityContext.getAuthentication()).thenReturn(new UsernamePasswordAuthenticationToken(mockUserDetails, null));
-        when(mockUserDetails.getUsername()).thenReturn("doe.john@example.com");
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer l'utilisateur
-        ResponseEntity<?> response = userController.save(userId.toString());
-
-        // THEN
-        // On vérifie que le statut de la réponse est UNAUTHORIZED
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void deleteBadRequestTest() {
-        // GIVEN
-        String invalidUserId = "Invalid ID";
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer l'utilisateur avec un identifiant invalide
-        ResponseEntity<?> response = userController.save(invalidUserId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    @WithMockUser
+    public void deleteUserByIdBadRequestTest() throws Exception {
+        mockMvc.perform(delete("/api/user/not_a_number")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
 }

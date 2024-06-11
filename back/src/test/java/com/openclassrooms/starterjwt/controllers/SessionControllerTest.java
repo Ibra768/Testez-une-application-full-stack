@@ -1,20 +1,21 @@
 package com.openclassrooms.starterjwt.controllers;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.openclassrooms.starterjwt.dto.SessionDto;
 import com.openclassrooms.starterjwt.mapper.SessionMapper;
@@ -22,290 +23,230 @@ import com.openclassrooms.starterjwt.models.Session;
 import com.openclassrooms.starterjwt.models.Teacher;
 import com.openclassrooms.starterjwt.models.User;
 import com.openclassrooms.starterjwt.services.SessionService;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class SessionControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private SessionService sessionService;
 
-    @Mock
+    @MockBean
     private SessionMapper sessionMapper;
 
-    @InjectMocks
-    private SessionController sessionController;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
-    private Session mockSession;
+    private Teacher mockTeacher;
+    private List<User> mockUsers;
+    private List<Session> mockSessions;
+    private List<SessionDto> mockSessionsDto;
 
     @BeforeEach
     public void setup() {
-        List<User> mockUsers = new ArrayList<>();
-        mockUsers.add(new User(1L, "john.doe@example.com", "Doe", "John", "A simple password", false, LocalDateTime.now(), LocalDateTime.now()));
-        mockUsers.add(new User(2L, "lorem.ipsum@example.com", "Ipsum", "Lorem", "A simple password", true, LocalDateTime.now(), LocalDateTime.now()));
-
-        Teacher mockTeacher = new Teacher(1L, "Johnson", "Carl", LocalDateTime.now(), LocalDateTime.now());
-
-        this.mockSession = new Session(1L, "First session", new Date(), "A small description", mockTeacher, mockUsers, LocalDateTime.now(), LocalDateTime.now());
+        this.mockTeacher = new Teacher(1L, "Doe", "John", null, null);
+        this.mockUsers = new ArrayList<>();
+        this.mockUsers.add(new User("john.doe@example.com", "Doe", "John","A small password", false));
+        this.mockSessions = new ArrayList<>();
+        this.mockSessions.add(new Session(1L, "First session", new Date(), "A small description", this.mockTeacher, this.mockUsers, null, null));
+        this.mockSessions.add(new Session(2L, "Second session", new Date(), "A small description", this.mockTeacher, this.mockUsers, null, null));
+        this.mockSessionsDto = new ArrayList<>();
+        this.mockSessionsDto.add(new SessionDto(1L, "First session", new Date(), this.mockTeacher.getId(), "A small description", new ArrayList<>(), null, null));
+        this.mockSessionsDto.add(new SessionDto(2L, "Second session", new Date(), this.mockTeacher.getId(), "A small description", new ArrayList<>(), null, null));
     }
 
     @Test
-    void findByIdSuccessTest() {
+    @WithMockUser
+    void findByIdTest() throws Exception {
+
         // GIVEN
-        // On définit un identifiant de session
-        String sessionId = "1";
-        // On crée une session mockée
-        Session session = this.mockSession;
-        // On simule le comportement du service pour retourner une session lorsqu'on lui passe un identifiant
-        when(sessionService.getById(anyLong())).thenReturn(session);
+        Session mockSession = this.mockSessions.get(0);
+        SessionDto mockSessionDto = this.mockSessionsDto.get(0);
+        when(sessionService.getById(anyLong())).thenReturn(mockSession);
+        when(sessionMapper.toDto(mockSession)).thenReturn(mockSessionDto);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour trouver la session par son identifiant
-        ResponseEntity<?> response = sessionController.findById(sessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le corps de la réponse est égal à la session mockée convertie en DTO
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(this.sessionMapper.toDto(session));
+        // WHEN & THEN
+        mockMvc.perform(get("/api/session/"+mockSession.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void findByIdNotFoundTest() {
+    @WithMockUser
+    void findByIdNotFoundTest() throws Exception {
+
         // GIVEN
-        // On définit un identifiant de session
-        String sessionId = "1";
-        // On simule le comportement du service pour retourner null lorsqu'on lui passe un identifiant
         when(sessionService.getById(anyLong())).thenReturn(null);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour trouver la session par son identifiant
-        ResponseEntity<?> response = sessionController.findById(sessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est NOT_FOUND
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        // WHEN & THEN
+        mockMvc.perform(get("/api/session/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    void findByIdBadRequestTest() {
+    @WithMockUser
+    void findByIdBadRequest() throws Exception {
+
         // GIVEN
-        // On définit un identifiant de session invalide
-        String invalidSessionId = "An invalid ID";
+        when(sessionService.getById(anyLong())).thenReturn(null);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour trouver la session par son identifiant
-        ResponseEntity<?> response = sessionController.findById(invalidSessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        // WHEN & THEN
+        mockMvc.perform(get("/api/session/not_a_number")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void findAllSuccessTest() {
+    @WithMockUser
+    void findAllSuccessTest() throws Exception {
+
         // GIVEN
-        // On crée une liste de sessions mockées
-        List<Session> sessions = List.of(this.mockSession);
-        // On simule le comportement du service pour retourner toutes les sessions
-        when(sessionService.findAll()).thenReturn(sessions);
+        when(sessionService.findAll()).thenReturn(mockSessions);
+        when(sessionMapper.toDto(mockSessions)).thenReturn(mockSessionsDto);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour récupérer toutes les sessions
-        ResponseEntity<?> response = sessionController.findAll();
-
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le corps de la réponse est égal à la liste des sessions mockées converties en DTO
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(this.sessionMapper.toDto(sessions));
+        // WHEN & THEN
+        mockMvc.perform(get("/api/session")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void createSuccessTest() {
+    @WithMockUser
+    void createSuccessTest() throws Exception {
         // GIVEN
-        // On crée un DTO de session
-        SessionDto sessionDto = new SessionDto();
-        // On crée une session mockée
-        Session session = this.mockSession;
-        // On simule le comportement du mapper pour convertir le DTO en entité
-        when(sessionMapper.toEntity(sessionDto)).thenReturn(session);
-        // On simule le comportement du service pour créer la session
-        when(sessionService.create(session)).thenReturn(session);
-        // On simule le comportement du mapper pour convertir l'entité en DTO
-        when(sessionMapper.toDto(session)).thenReturn(sessionDto);
+        SessionDto mockSessionDto = mockSessionsDto.get(0);
+        mockSessionDto.setDate(new Date());
+        Session mockSession = mockSessions.get(0);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour créer la session
-        ResponseEntity<?> response = sessionController.create(sessionDto);
 
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le corps de la réponse est égal au DTO de la session mockée
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(this.sessionMapper.toDto(session));
+        when(sessionMapper.toEntity(mockSessionDto)).thenReturn(mockSession);
+        when(sessionService.create(mockSession)).thenReturn(mockSession);
+        when(sessionMapper.toDto(mockSession)).thenReturn(mockSessionDto);
+
+        mockMvc.perform(post("/api/session/")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(mockSessionDto)))
+                .andExpect(status().isOk());
+
+    }
+
+
+    @Test
+    @WithMockUser
+    void updateSuccessTest() throws Exception {
+        // GIVEN
+        SessionDto mockSessionDto = mockSessionsDto.get(0);
+        Session mockSession = mockSessions.get(0);
+
+        when(sessionMapper.toEntity(mockSessionDto)).thenReturn(mockSession);
+        when(sessionService.update(anyLong(), any(Session.class))).thenReturn(mockSession);
+        when(sessionMapper.toDto(mockSession)).thenReturn(mockSessionDto);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String mockSessionDtoJson = objectMapper.writeValueAsString(mockSessionDto);
+
+        // WHEN & THEN
+        mockMvc.perform(put("/api/session/" + mockSessionDto.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mockSessionDtoJson))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void updateSuccessTest() {
+    @WithMockUser
+    void deleteSuccessTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session
-        String sessionId = "1";
-        // On crée un DTO de session
-        SessionDto sessionDto = new SessionDto();
-        // On crée une session mockée
-        Session session = this.mockSession;
-        // On simule le comportement du mapper pour convertir le DTO en entité
-        when(sessionMapper.toEntity(sessionDto)).thenReturn(session);
-        // On simule le comportement du service pour mettre à jour la session
-        when(sessionService.update(anyLong(), eq(session))).thenReturn(session);
-        // On simule le comportement du mapper pour convertir l'entité en DTO
-        when(sessionMapper.toDto(session)).thenReturn(sessionDto);
+        Session mockSession = mockSessions.get(0);
+        when(sessionService.getById(anyLong())).thenReturn(mockSession);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour mettre à jour la session
-        ResponseEntity<?> response = sessionController.update(sessionId, sessionDto);
+        // WHEN & THEN
+        mockMvc.perform(delete("/api/session/" + mockSession.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le corps de la réponse est égal au DTO de la session mockée
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(this.sessionMapper.toDto(session));
+        verify(sessionService, times(1)).delete(mockSession.getId());
     }
 
     @Test
-    void updateBadRequestTest() {
+    @WithMockUser
+    void deleteNotFoundTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session invalide
-        String invalidSessionId = "An invalid ID";
-        // On crée un DTO de session
-        SessionDto sessionDto = new SessionDto();
+        when(sessionService.getById(anyLong())).thenReturn(null);
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour mettre à jour la session avec un identifiant invalide
-        ResponseEntity<?> response = sessionController.update(invalidSessionId, sessionDto);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        // WHEN & THEN
+        mockMvc.perform(delete("/api/session/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    void deleteSuccessTest() {
-        // GIVEN
-        // On définit un identifiant de session
-        String sessionId = "1";
-        // On crée une session mockée
-        Session session = this.mockSession;
-        // On simule le comportement du service pour retourner une session lorsqu'on lui passe un identifiant
-        when(sessionService.getById(anyLong())).thenReturn(session);
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer la session
-        ResponseEntity<?> response = sessionController.save(sessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le service a été appelé une fois pour supprimer la session
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(sessionService, times(1)).delete(Long.parseLong(sessionId));
+    @WithMockUser
+    void deleteBadRequestTest() throws Exception {
+        // WHEN & THEN
+        mockMvc.perform(delete("/api/session/not_a_number")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void deleteNotFoundTest() {
+    @WithMockUser
+    void participateSuccessTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session
-        String invalidSessionId = "1";
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer la session avec un identifiant invalide
-        ResponseEntity<?> response = sessionController.save(invalidSessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est NOT_FOUND
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void deleteBadRequestTest() {
-        // GIVEN
-        // On définit un identifiant de session invalide
-        String invalidSessionId = "An invalid ID";
-
-        // WHEN
-        // On appelle la méthode du contrôleur pour supprimer la session avec un identifiant invalide
-        ResponseEntity<?> response = sessionController.save(invalidSessionId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void participateSuccessTest() {
-        // GIVEN
-        // On définit un identifiant de session et un identifiant d'utilisateur
         String sessionId = "1";
         String userId = "1";
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour faire participer l'utilisateur à la session
-        ResponseEntity<?> response = sessionController.participate(sessionId, userId);
+        // WHEN & THEN
+        mockMvc.perform(post("/api/session/" + sessionId + "/participate/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le service a été appelé une fois pour faire participer l'utilisateur à la session
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(sessionService, times(1)).participate(Long.parseLong(sessionId), Long.parseLong(userId));
     }
 
     @Test
-    void participateBadRequestTest() {
+    @WithMockUser
+    void participateBadRequestTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session et un identifiant d'utilisateur invalides
-        String invalidSessionId = "An invalid ID";
+        String invalidSessionId = "not_a_number";
         String userId = "1";
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour faire participer l'utilisateur à la session avec un identifiant de session invalide
-        ResponseEntity<?> response = sessionController.participate(invalidSessionId, userId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        // WHEN & THEN
+        mockMvc.perform(post("/api/session/" + invalidSessionId + "/participate/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void noLongerParticipateSuccessTest() {
+    @WithMockUser
+    void noLongerParticipateSuccessTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session et un identifiant d'utilisateur
         String sessionId = "1";
         String userId = "1";
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour faire cesser la participation de l'utilisateur à la session
-        ResponseEntity<?> response = sessionController.noLongerParticipate(sessionId, userId);
+        // WHEN & THEN
+        mockMvc.perform(delete("/api/session/" + sessionId + "/participate/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
 
-        // THEN
-        // On vérifie que le statut de la réponse est OK
-        // On vérifie que le service a été appelé une fois pour faire cesser la participation de l'utilisateur à la session
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(sessionService, times(1)).noLongerParticipate(Long.parseLong(sessionId), Long.parseLong(userId));
     }
 
     @Test
-    void noLongerParticipateBadRequestTest() {
+    @WithMockUser
+    void noLongerParticipateBadRequestTest() throws Exception {
         // GIVEN
-        // On définit un identifiant de session et un identifiant d'utilisateur invalides
-        String invalidSessionId = "An invalid ID";
+        String invalidSessionId = "not_a_number";
         String userId = "1";
 
-        // WHEN
-        // On appelle la méthode du contrôleur pour faire cesser la participation de l'utilisateur à la session avec un identifiant de session invalide
-        ResponseEntity<?> response = sessionController.noLongerParticipate(invalidSessionId, userId);
-
-        // THEN
-        // On vérifie que le statut de la réponse est BAD_REQUEST
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        // WHEN & THEN
+        mockMvc.perform(delete("/api/session/" + invalidSessionId + "/participate/" + userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
 }

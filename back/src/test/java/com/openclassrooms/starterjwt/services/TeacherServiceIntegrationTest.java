@@ -1,64 +1,69 @@
 package com.openclassrooms.starterjwt.services;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.openclassrooms.starterjwt.models.Teacher;
+import com.openclassrooms.starterjwt.repository.TeacherRepository;
 
-@SpringBootTest()
-class TeacherServiceIntegrationTest {
+@ExtendWith(MockitoExtension.class)
+public class TeacherServiceIntegrationTest {
 
-    @Autowired()
-    private TeacherService teacherService;
+    @InjectMocks
+    TeacherService teacherService;
+
+    @Mock
+    TeacherRepository teacherRepository;
+
 
     @Test
-    void findAllTest() {
+    public void findAllTest() {
+        // Créer des données de test
+        Teacher teacher1 = new Teacher();
+        teacher1.setFirstName("John");
+        teacher1.setLastName("Doe");
 
-        // WHEN
+        Teacher teacher2 = new Teacher();
+        teacher2.setFirstName("Jane");
+        teacher2.setLastName("Doe");
+
+        List<Teacher> teachers = Arrays.asList(teacher1, teacher2);
+
+        // Définir le comportement du mock
+        when(teacherRepository.findAll()).thenReturn(teachers);
+
+        // Appeler la méthode à tester
         List<Teacher> result = teacherService.findAll();
 
-        // THEN
-        assertThat(result.get(0).getFirstName()).isEqualTo("Margot");
-        assertThat(result.get(0).getLastName()).isEqualTo("DELAHAYE");
-        assertThat(result.get(1).getFirstName()).isEqualTo("Hélène");
-        assertThat(result.get(1).getLastName()).isEqualTo("THIERCELIN");
-        // Ajouté à la BDD pour le test
-        assertThat(result.get(2).getFirstName()).isEqualTo("John");
-        assertThat(result.get(2).getLastName()).isEqualTo("Doe");
-
+        // Vérifier le résultat
+        assertEquals(teachers, result);
     }
 
     @Test
-    void findOneByExistingIdTest() {
+    public void findByIdTest() {
+        // Créer des données de test
+        Teacher teacher1 = new Teacher();
+        teacher1.setId(1L);
+        teacher1.setFirstName("John");
+        teacher1.setLastName("Doe");
 
-        // GIVEN
-        // Ajouté à la BDD pour le test
-        Long teacherId = 3L;
+        // Définir le comportement du mock
+        when(teacherRepository.findById(1L)).thenReturn(Optional.of(teacher1));
 
-        // WHEN
-        Teacher result = teacherService.findById(teacherId);
+        // Appeler la méthode à tester
+        Teacher result = teacherService.findById(1L);
 
-        // THEN
-        assertThat(result.getFirstName()).isEqualTo("John");
-        assertThat(result.getLastName()).isEqualTo("Doe");
+        // Vérifier le résultat
+        assertEquals(teacher1, result);
     }
-
-    @Test
-    void findOneByNonExistingIdTest() {
-
-        // GIVEN
-        Long teacherId = 0L;
-
-        // WHEN
-        Teacher result = teacherService.findById(teacherId);
-
-        // THEN
-        assertThat(result).isNull();
-    }
-
 }

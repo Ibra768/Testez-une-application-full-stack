@@ -1,24 +1,32 @@
 package com.openclassrooms.starterjwt.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openclassrooms.starterjwt.dto.UserDto;
 import com.openclassrooms.starterjwt.models.User;
-import com.openclassrooms.starterjwt.services.UserService;
-import org.junit.jupiter.api.BeforeEach;
+import com.openclassrooms.starterjwt.repository.UserRepository;
+
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -29,83 +37,128 @@ public class UserControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private UserService userService;
+    UserRepository $userRepository;
 
-    private List<User> mockUsers;
+    @Nested
+    public class FindById {
 
-    @BeforeEach
-    public void setup() {
-        this.mockUsers = new ArrayList<>();
-        this.mockUsers.add(new User("john.doe@example.com", "Doe", "John","A small password", false));
-        this.mockUsers.add(new User("john.dae@example.com", "Dae", "John","A small password", false));
+        @Test
+        @WithMockUser
+        void shouldHaveId() throws Exception {
+
+            UserDto userDto = new UserDto(1L,"example@mail.com","Doe","John",true,"Password",null,null);
+            User user = new User(1L,"example@mail.com","Doe","John","Password",true,null,null);
+            // GIVEN
+            when($userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+
+            // WHEN & THEN
+            mockMvc.perform(get("/api/user/1")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(new ObjectMapper().writeValueAsString(userDto)));
+
+            verify($userRepository,times(1)).findById(anyLong());
+        }
+
+        @Test
+        @WithMockUser
+        void shouldNotFound() throws Exception {
+
+            // GIVEN
+            when($userRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+            // WHEN & THEN
+            mockMvc.perform(get("/api/user/1")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound());
+
+            verify($userRepository, times(1)).findById(anyLong());
+        }
+        @Test
+        @WithMockUser
+        void shouldBadRequest() throws Exception {
+
+            // WHEN & THEN
+            mockMvc.perform(get("/api/user/not_a_number")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+
+            verify($userRepository, times(0)).findById(anyLong());
+
+        }
     }
 
-    @Test
-    @WithMockUser
-    public void getUserByIdTest() throws Exception {
-        when(userService.findById(anyLong())).thenReturn(mockUsers.get(0));
+    @Nested
+    public class Save{
+        @Test
+        @WithMockUser(username = "example@mail.com", roles = {"USER"})
+        void shouldSave() throws Exception {
 
-        mockMvc.perform(get("/api/user/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
+            User user = new User(1L,"example@mail.com","Doe","John","Password",true,null,null);
+            // GIVEN
+            when($userRepository.findById(anyLong())).thenReturn(Optional.of(user));
 
-    @Test
-    @WithMockUser
-    public void getUserByIdNotFoundTest() throws Exception {
+            // WHEN & THEN
+            mockMvc.perform(delete("/api/user/1")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk());
 
-        when(userService.findById(anyLong())).thenReturn(null);
+            verify($userRepository,times(1)).findById(anyLong());
+            verify($userRepository,times(1)).deleteById(anyLong());
+        }
 
-        mockMvc.perform(get("/api/user/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
-    }
+        @Test
+        @WithMockUser
+        void shouldNotFound() throws Exception {
 
-    @Test
-    @WithMockUser
-    public void getUserByIdBadRequestTest() throws Exception {
-        mockMvc.perform(get("/api/user/not_a_number")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
+            // GIVEN
+            when($userRepository.findById(anyLong())).thenReturn(Optional.empty());
 
-    @Test
-    @WithMockUser(username = "john.doe@example.com")
-    public void deleteUserByIdTest() throws Exception {
-        when(userService.findById(anyLong())).thenReturn(mockUsers.get(0));
+            // WHEN & THEN
+            mockMvc.perform(delete("/api/user/1")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound());
 
-        mockMvc.perform(delete("/api/user/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
+            verify($userRepository,times(1)).findById(anyLong());
+            verify($userRepository,times(0)).deleteById(anyLong());
+        }
+        @Test
+        @WithMockUser
+        void shouldUnauthorized() throws Exception {
 
-    @Test
-    @WithMockUser
-    public void deleteUserByIdNotFoundTest() throws Exception {
-        when(userService.findById(anyLong())).thenReturn(null);
+            User user = new User(1L,"example@mail.com","Doe","John","Password",true,null,null);
+            // GIVEN
+            when($userRepository.findById(anyLong())).thenReturn(Optional.of(user));
 
-        mockMvc.perform(delete("/api/user/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
-    }
+            // Arrange
+            UserDetails mockUserDetails = org.springframework.security.core.userdetails.User.withUsername("example@mail.com").password("password").roles("USER").build();
+            Authentication mockAuthentication = mock(Authentication.class);
+            SecurityContext mockSecurityContext = mock(SecurityContext.class);
 
-    @Test
-    @WithMockUser(username = "john.doe@example.com")
-    public void deleteUserByIdUnauthorizedTest() throws Exception {
-        User user = mockUsers.get(1);
-        when(userService.findById(anyLong())).thenReturn(user);
+            when(mockAuthentication.getPrincipal()).thenReturn(mockUserDetails);
+            when(mockSecurityContext.getAuthentication()).thenReturn(mockAuthentication);
 
-        mockMvc.perform(delete("/api/user/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
-    }
+            SecurityContextHolder.setContext(mockSecurityContext);
 
-    @Test
-    @WithMockUser
-    public void deleteUserByIdBadRequestTest() throws Exception {
-        mockMvc.perform(delete("/api/user/not_a_number")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+            // WHEN & THEN
+            mockMvc.perform(delete("/api/user/1")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isUnauthorized());
+
+            verify($userRepository,times(1)).findById(anyLong());
+            verify($userRepository,times(0)).deleteById(anyLong());
+
+        }
+        void shouldBadRequest() throws Exception {
+
+            // WHEN & THEN
+            mockMvc.perform(delete("/api/user/not_a_number")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+
+            verify($userRepository, times(0)).findById(anyLong());
+
+        }
     }
 
 }

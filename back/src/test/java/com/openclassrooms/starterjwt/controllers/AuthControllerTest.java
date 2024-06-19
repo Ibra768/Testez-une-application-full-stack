@@ -7,6 +7,7 @@ import com.openclassrooms.starterjwt.payload.request.SignupRequest;
 import com.openclassrooms.starterjwt.repository.UserRepository;
 import com.openclassrooms.starterjwt.security.jwt.JwtUtils;
 import com.openclassrooms.starterjwt.security.services.UserDetailsImpl;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,8 +23,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -70,23 +70,55 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(loginRequest)))
                 .andExpect(status().isOk());
+
+        verify(userRepository, times(1)).findByEmail(anyString());
     }
 
-    @Test
-    public void registerUserTest() throws Exception {
-        // GIVEN
-        SignupRequest signUpRequest = new SignupRequest();
-        signUpRequest.setEmail("test@test.com");
-        signUpRequest.setFirstName("Test");
-        signUpRequest.setLastName("User");
-        signUpRequest.setPassword("password");
+    @Nested
+    public class registerUserTest{
+        @Test
+        void shouldRegister() throws Exception {
 
-        when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
+            when(userRepository.existsByEmail(anyString())).thenReturn(false);
 
-        // WHEN & THEN
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(signUpRequest)))
-                .andExpect(status().isOk());
+            // GIVEN
+            SignupRequest signUpRequest = new SignupRequest();
+            signUpRequest.setEmail("test@test.com");
+            signUpRequest.setFirstName("Test");
+            signUpRequest.setLastName("User");
+            signUpRequest.setPassword("password");
+
+            when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
+
+            // WHEN & THEN
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(signUpRequest)))
+                    .andExpect(status().isOk());
+
+            verify(userRepository, times(1)).existsByEmail(anyString());
+        }
+        @Test
+        void shouldBadRequest() throws Exception {
+
+            when(userRepository.existsByEmail(anyString())).thenReturn(true);
+
+            // GIVEN
+            SignupRequest signUpRequest = new SignupRequest();
+            signUpRequest.setEmail("test@test.com");
+            signUpRequest.setFirstName("Test");
+            signUpRequest.setLastName("User");
+            signUpRequest.setPassword("password");
+
+            // WHEN & THEN
+            mockMvc.perform(post("/api/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(signUpRequest)))
+                    .andExpect(status().isBadRequest());
+
+            verify(userRepository, times(1)).existsByEmail(anyString());
+            verify(userRepository, times(0)).save(new User());
+        }
     }
+
 }

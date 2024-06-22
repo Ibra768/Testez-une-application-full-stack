@@ -13,6 +13,7 @@ describe('ListComponent', () => {
 
   const mockSessionService = {
     sessionInformation: {
+      id : 1,
       admin: true
     }
   }
@@ -33,4 +34,11 @@ describe('ListComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  // On teste que la méthode get user retourne bien les informations de session
+  it('Should return session information', () => {
+    // On vérifie que la méthode get user retourne bien les informations de session simulées
+    expect(component.user).toEqual(mockSessionService.sessionInformation);
+  });
+
 });

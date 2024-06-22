@@ -1,6 +1,6 @@
-﻿describe('Participation e2e tests', () => {
+﻿describe('User session spec', () => {
 
-    it('Login', () => {
+    it('Login successfull', () => {
       let sessionUsers: Number[] = [];
       cy.visit('/login')
   
@@ -54,7 +54,76 @@
       cy.url().should('include', '/sessions')
     })
   
-   
+    it('Account details', () => {
+      let sessionUsers: Number[] = [];
+  
+      cy.intercept(
+        {
+          method: 'GET',
+          url: '/api/user/1',
+        },
+        {
+          id: 1,
+          username: 'userName',
+          firstName: 'firstName',
+          lastName: 'lastName',
+          email: "test@mail.com",
+          admin: false,
+          password: "password",
+          createdAt: new Date(),
+          updatedAt: new Date()
+  
+        },
+      ).as('user')
+  
+      cy.intercept(
+        {
+          method: 'GET',
+          url: '/api/session',
+        },
+        [
+          {
+            id: 1,
+            name: "Test",
+            date: new Date(),
+            teacher_id: 1,
+            description: "Test description",
+            users: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]).as('session')
+  
+      cy.intercept(
+        {
+          method: 'GET',
+          url: '/api/session/1',
+        },
+        {
+          id: 1,
+          name: "Test",
+          date: new Date(),
+          teacher_id: 1,
+          description: "Test description",
+          users: sessionUsers,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ).as('session')
+  
+      cy.get('span[routerLink=me]').click().then(()=>{
+        cy.url().should('include', '/me').then(()=>{
+          cy.get('p').contains("Name: firstName "+("lastName").toUpperCase())
+          cy.get('p').contains("Email: test@mail.com")
+        })
+      })
+      cy.get('button').first().click()
+      cy.url().should('include', '/sessions')
+  
+      cy.get('button span').contains("Detail").click()
+      cy.url().should('include', '/sessions/detail/1')
+    })
+  
     it('Participate to a session', () => {
       
       let sessionUsers: Number[] = [1];
@@ -156,4 +225,9 @@
       cy.get('span[class=ml1]').contains("0 attendees")
     })
   
+    it('Logout successful', () => {
+      cy.get('span[class=link]').contains("Logout").click()
+  
+      cy.url().should('eq', 'http://localhost:4200/')
+    })
   });

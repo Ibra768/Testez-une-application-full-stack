@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">63.63% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.55% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">60% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/10</span>
+                <span class='fraction'>10/10</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -115,39 +115,39 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">29x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,20 +178,20 @@ export class SessionApiService {
     return this.httpClient.delete(`${this.pathService}/${id}`);
   }
 &nbsp;
-  public <span class="fstat-no" title="function not covered" >create(</span>session: Session): Observable&lt;Session&gt; {
-<span class="cstat-no" title="statement not covered" >    return t</span>his.httpClient.post&lt;Session&gt;(this.pathService, session);
+  public create(session: Session): Observable&lt;Session&gt; {
+    return this.httpClient.post&lt;Session&gt;(this.pathService, session);
   }
 &nbsp;
-  public <span class="fstat-no" title="function not covered" >update(</span>id: string, session: Session): Observable&lt;Session&gt; {
-<span class="cstat-no" title="statement not covered" >    return t</span>his.httpClient.put&lt;Session&gt;(`${this.pathService}/${id}`, session);
+  public update(id: string, session: Session): Observable&lt;Session&gt; {
+    return this.httpClient.put&lt;Session&gt;(`${this.pathService}/${id}`, session);
   }
 &nbsp;
-  public <span class="fstat-no" title="function not covered" >participate(</span>id: string, userId: string): Observable&lt;void&gt; {
-<span class="cstat-no" title="statement not covered" >    return t</span>his.httpClient.post&lt;void&gt;(`${this.pathService}/${id}/participate/${userId}`, null);
+  public participate(id: string, userId: string): Observable&lt;void&gt; {
+    return this.httpClient.post&lt;void&gt;(`${this.pathService}/${id}/participate/${userId}`, null);
   }
 &nbsp;
-  public <span class="fstat-no" title="function not covered" >unParticipate(</span>id: string, userId: string): Observable&lt;void&gt; {
-<span class="cstat-no" title="statement not covered" >    return t</span>his.httpClient.delete&lt;void&gt;(`${this.pathService}/${id}/participate/${userId}`);
+  public unParticipate(id: string, userId: string): Observable&lt;void&gt; {
+    return this.httpClient.delete&lt;void&gt;(`${this.pathService}/${id}/participate/${userId}`);
   }
 &nbsp;
 }
@@ -202,7 +202,7 @@ export class SessionApiService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-06-17T22:15:38.735Z
+                at 2024-06-22T13:47:31.696Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>

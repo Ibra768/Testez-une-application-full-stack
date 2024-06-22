@@ -1,0 +1,9 @@
+import './not-found.cy.ts';
+import './user/login.cy.ts';
+import './user/logout.cy.ts';
+import './user/me.cy.ts';
+import './user/register.cy.ts';
+import './session/create.cy.ts';
+import './session/delete.cy.ts';
+import './session/edit.cy.ts';
+import './session/participation.cy.ts';
